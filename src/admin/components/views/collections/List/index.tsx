@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import queryString from 'qs';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useHistory } from 'react-router-dom';
 import { useConfig, useAuth } from '@payloadcms/config-provider';
 
 import usePayloadAPI from '../../../../hooks/usePayloadAPI';
@@ -33,23 +33,31 @@ const ListView: React.FC<ListIndexProps> = (props) => {
   const { serverURL, routes: { api, admin } } = useConfig();
   const { permissions } = useAuth();
   const location = useLocation();
+  const history = useHistory();
   const { setStepNav } = useStepNav();
 
   const [fields] = useState(() => formatFields(collection));
   const [listControls, setListControls] = useState<ListControls>({});
   const [columns, setColumns] = useState([]);
-  const [sort, setSort] = useState(null);
 
   const collectionPermissions = permissions?.collections?.[slug];
   const hasCreatePermission = collectionPermissions?.create?.permission;
 
-  const { page } = queryString.parse(location.search, { ignoreQueryPrefix: true });
+  const { page, sort } = queryString.parse(location.search, { ignoreQueryPrefix: true });
   const newDocumentURL = `${admin}/collections/${slug}/create`;
   const apiURL = `${serverURL}${api}/${slug}`;
 
   const [{ data }, { setParams }] = usePayloadAPI(apiURL, { initialParams: { depth: 0 } });
 
   const { columns: listControlsColumns } = listControls;
+
+  const setSort = useCallback((value: string) => {
+    if (value) {
+      const params = queryString.parse(location.search, { ignoreQueryPrefix: true });
+      params.sort = value;
+      history.replace({ search: queryString.stringify(params, { addQueryPrefix: true }) });
+    }
+  }, [history, location.search]);
 
   useEffect(() => {
     const params = {
