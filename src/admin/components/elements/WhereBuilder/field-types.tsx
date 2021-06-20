@@ -73,11 +73,11 @@ const fieldTypeConditions = {
   },
   number: {
     component: 'Number',
-    operators: [...base, ...numeric],
+    operators: [...numeric],
   },
   date: {
     component: 'Date',
-    operators: [...base, ...numeric],
+    operators: [...numeric],
   },
   upload: {
     component: 'Text',
