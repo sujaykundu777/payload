@@ -1,6 +1,17 @@
-import { PayloadCollectionConfig } from '../../src/collections/config/types';
+import { CollectionConfig, BeforeChangeHook } from '../../src/collections/config/types';
 
-const Media: PayloadCollectionConfig = {
+const checkForUploadSizesHook: BeforeChangeHook = ({ req: { payloadUploadSizes }, data }) => {
+  if (typeof payloadUploadSizes === 'object') {
+    return {
+      ...data,
+      foundUploadSizes: true,
+    };
+  }
+
+  return data;
+};
+
+const Media: CollectionConfig = {
   slug: 'media',
   labels: {
     singular: 'Media',
@@ -13,11 +24,22 @@ const Media: PayloadCollectionConfig = {
     enableRichTextRelationship: true,
     description: 'No selfies please',
   },
+  hooks: {
+    beforeChange: [
+      checkForUploadSizesHook,
+    ],
+  },
   upload: {
     staticURL: '/media',
     staticDir: './media',
     adminThumbnail: ({ doc }) => `/media/${doc.filename}`,
     imageSizes: [
+      {
+        name: 'maintainedAspectRatio',
+        width: 1024,
+        height: null,
+        crop: 'center',
+      },
       {
         name: 'tablet',
         width: 640,
@@ -44,6 +66,10 @@ const Media: PayloadCollectionConfig = {
       type: 'text',
       required: true,
       localized: true,
+    },
+    {
+      name: 'foundUploadSizes',
+      type: 'checkbox',
     },
   ],
   timestamps: true,
