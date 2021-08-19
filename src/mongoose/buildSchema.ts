@@ -293,20 +293,17 @@ const fieldToSchemaMap = {
     let schemaToReturn: { [key: string]: any } = {};
 
     const relationTo = [].concat(field.relationTo);
-    const relatedCollections = relationTo.map((slug) => (
-      config.collections.find((collection) => collection.slug === slug)
-    ));
-    const ids = relatedCollections.map(({ id }) => id);
-    const areIdTypesConsistent = ids.every((id) => ids[0] === id);
-    let idType;
-    if (areIdTypesConsistent) {
-      if (ids[0] === undefined) {
-        idType = Schema.Types.ObjectId;
-      } else {
-        [idType] = ids;
-      }
-    } else {
-      idType = Schema.Types.Mixed;
+    const { idType: relatedIdType } = config.collections.find(({ slug }) => slug === relationTo[0]);
+    let idSchemaType;
+    switch (relatedIdType) {
+      case 'text':
+        idSchemaType = String;
+        break;
+      case 'number':
+        idSchemaType = Number;
+        break;
+      default:
+        idSchemaType = Schema.Types.ObjectId;
     }
 
     if (field.localized) {
@@ -317,14 +314,14 @@ const fieldToSchemaMap = {
           if (hasManyRelations) {
             localeSchema._id = false;
             localeSchema.value = {
-              type: idType,
+              type: idSchemaType,
               refPath: `${field.name}.${locale}.relationTo`,
             };
             localeSchema.relationTo = { type: String, enum: field.relationTo };
           } else {
             localeSchema = {
               ...formatBaseSchema(field),
-              type: idType,
+              type: idSchemaType,
               ref: field.relationTo,
             };
           }
@@ -339,7 +336,7 @@ const fieldToSchemaMap = {
     } else if (hasManyRelations) {
       schemaToReturn._id = false;
       schemaToReturn.value = {
-        type: idType,
+        type: idSchemaType,
         refPath: `${field.name}.relationTo`,
       };
       schemaToReturn.relationTo = { type: String, enum: field.relationTo };
@@ -348,7 +345,7 @@ const fieldToSchemaMap = {
     } else {
       schemaToReturn = {
         ...formatBaseSchema(field),
-        type: idType,
+        type: idSchemaType,
         ref: field.relationTo,
       };
 
