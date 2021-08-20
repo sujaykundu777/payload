@@ -49,8 +49,17 @@ const formatBaseSchema = (field: Field) => ({
 
 const buildSchema = (config: SanitizedConfig, configFields: Field[], options = {}): Schema => {
   let fields = {};
+  let schemaFields = configFields;
 
-  configFields.forEach((field) => {
+  const idField = schemaFields.find(({ name }) => name === 'id');
+  if (idField) {
+    fields = {
+      _id: idField.type === 'number' ? Number : String,
+    };
+    schemaFields = schemaFields.filter(({ name }) => name !== 'id');
+  }
+
+  schemaFields.forEach((field) => {
     const fieldSchema: FieldSchemaGenerator = fieldToSchemaMap[field.type];
 
     if (fieldSchema) {
@@ -293,17 +302,17 @@ const fieldToSchemaMap = {
     let schemaToReturn: { [key: string]: any } = {};
 
     const relationTo = [].concat(field.relationTo);
-    const { idType: relatedIdType } = config.collections.find(({ slug }) => slug === relationTo[0]);
+    const relatedCollection = config.collections.find(({ slug }) => slug === relationTo[0]);
+    const relatedIdField = relatedCollection.fields.find(({ name }) => name === 'id');
     let idSchemaType;
-    switch (relatedIdType) {
-      case 'text':
-        idSchemaType = String;
-        break;
-      case 'number':
+    if (relatedIdField) {
+      if (relatedIdField.type === 'number') {
         idSchemaType = Number;
-        break;
-      default:
-        idSchemaType = Schema.Types.ObjectId;
+      } else {
+        idSchemaType = String;
+      }
+    } else {
+      idSchemaType = Schema.Types.ObjectId;
     }
 
     if (field.localized) {
